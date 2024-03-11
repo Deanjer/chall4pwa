@@ -1,0 +1,10 @@
+{
+    "swear_words": [
+      "fuck",
+      "bitch",
+      "shit",
+      "homo",
+      "nigger"
+    ],
+    "replacement": "****"
+  }

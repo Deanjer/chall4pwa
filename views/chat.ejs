@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocketIO</title>
+    <script src="/socket.io/socket.io.js" defer></script>
+    <link href="/output.css" rel="stylesheet" type="text/css">
+    <script type="module" defer>
+        const settings = { transport: ['websocket'], upgrade: false };
+        const socket = io(settings);
+        const form = document.getElementById('chat');
+        const userlist = document.getElementById('userlist');
+        const messages = document.getElementById('messages');
+        const message = document.getElementById('message');
+        const username = window.location.href.split('/').pop();
+
+        socket.emit('join', username);
+        console.log('Uw username is: ' + username);
+
+        socket.on('join', (data) => {
+            const { username, users } = data;
+            let li = document.createElement('li');
+            li.textContent = `${username} Joined the chat.`;
+            messages.appendChild(li);
+            messages.scrollTo(0, messages.scrollHeight);
+            userlist.innerHTML = '';
+
+            for (let i = 0; i < users.length; i++) {
+                li = document.createElement('li');
+                li.textContent = users[i];
+                userlist.appendChild(li);
+            }
+        });
+        socket.on('leave', (data) => {
+            const { username, users } = data;
+            let li = document.createElement('li');
+            li.textContent = `${username} Has left the chat.`;
+            messages.appendChild(li);
+            messages.scrollTo(0, messages.scrollHeight);
+            userlist.innerHTML = '';
+
+            for (let i = 0; i < users.length; i++) {
+                li = document.createElement('li');
+                li.textContent = users[i];
+                userlist.appendChild(li);
+            }
+        });
+        socket.on('message', (data) => {
+            const { messenger, message } = data;
+            const li = document.createElement('li');
+
+            if (messenger === username) {
+                li.className = "w-8/12 bg-blue-500 mt-10 p-4 text-white rounded-tl-lg rounded-tr-lg rounded-bl-lg ml-auto";
+            } else {
+                li.className = "w-8/12 bg-zinc-800 mt-10 p-4 text-white rounded-tl-lg rounded-tr-lg rounded-br-lg";
+            }
+
+            li.innerHTML = `<strong>${messenger}</strong>: ${message}`;
+            messages.appendChild(li);
+            messages.scrollTo(0, messages.scrollHeight);
+        });
+
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const messageValue = message.value.trim();
+            if (message.value) {
+                socket.emit('message', { messenger: username, message: message.value, name: 'Your Name' });
+                message.value = '';
+            }
+        });
+
+
+        function handleCooldownMessage(remainingCooldown) {
+            const systemMessages = document.getElementById('system-messages');
+            systemMessages.innerHTML = ''; // Clear existing messages
+
+            const li = document.createElement('li');
+            li.textContent = `System : Cooldown: You can send messages again in ${remainingCooldown} seconds.`;
+            systemMessages.appendChild(li);
+            systemMessages.scrollTo(0, systemMessages.scrollHeight);
+        }
+
+        socket.on('cooldown', (remainingCooldown) => {
+            handleCooldownMessage(remainingCooldown);
+        });
+
+
+        socket.on('systemMessage', (data) => {
+            const { messenger, message } = data;
+            const li = document.createElement('li');
+            li.textContent = `${messenger} : ${message}`;
+
+            const systemMessages = document.getElementById('system-messages');
+            systemMessages.appendChild(li);
+            systemMessages.scrollTo(0, systemMessages.scrollHeight);
+        });
+
+        document.getElementById('quitButton').addEventListener('click', function () {
+            window.location.href = '/login';
+        });
+        document.getElementById('quitButton2').addEventListener('click', function () {
+            window.location.href = '/login';
+        });
+
+        document.getElementById('userstab').addEventListener('click', function() 
+        {
+        window.location.href = '/users';
+        });
+
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        ul {
+            /* position: absolute; */
+            height: 300px;
+            top: 15px;
+            overflow-x: hidden;
+            overflow-y: scroll;
+            list-style: none;
+            padding-top: 2px;
+        }
+
+        /* ul#messages {
+            width: 400px;
+            right: 15px;
+            background-color: #ddd;
+        } */
+
+        ul#userlist {
+            width: 200px;
+            right: 430px;
+            background-color: #888;
+        }
+
+        li {
+            padding-left: 5px;
+            padding-bottom: 2px;
+            width: 100%;
+        }
+
+        #system-messages {
+            height: 40px;
+            width: 100%;
+        }
+
+        /* 
+        input#message {
+            position: absolute;
+            width: 520px;
+            top: 330px;
+            right: 104px;
+            line-height: 24px;
+            padding-left: 5px;
+        } */
+        /* 
+        button#send {
+            position: absolute;
+            line-height: 24px;
+            top: 330px;
+            right: 15px;
+            width: 80px;
+        } */
+
+        /* design */
+        .margintop-neg {
+            margin-top: -25px;
+        }
+
+        .marginbottom-neg {
+            margin-bottom: -25px;
+        }
+
+        .d-block {
+            display: block;
+        }
+
+        .footer-menu {
+            justify-content: space-around;
+        }
+
+
+        @media screen and (min-width: 768px) {
+            #d-hidden {
+                display: none;
+            }
+
+            .header-w {
+                width: 50%;
+            }
+
+            .footer-menu {
+                display: none;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            .gone {
+                display: none;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: calc(100vh - 10rem);
+            }
+
+            .d-hidden {
+                display: none;
+            }
+
+        }
+
+        .chat-mobile {
+            height: calc(100vh - 13rem);
+        }
+    </style>
+
+</head>
+
+<body class="min-h-screen bg-zinc-900 md:bg-gray-200 text-gray-500 ">
+    <div class="flex flex-col justify-between min-h-screen">
+        <div class="w-screen bg-black h-32 rounded-b-3xl p-12 flex justify-center md:justify-normal z-20 relative">
+            <!-- <button id="test-btn" class="text-white bg-blue-500 w-28 h-28" onclick="showSidebar()">test</button> -->
+            <div id="d-hidden" class="w-1/3 header-w">
+                <svg class="mt-2 sidebarshow" id="d-hidden" onclick="showSidebar()" xmlns="http://www.w3.org/2000/svg"
+                    width="10.414" height="18.828" viewBox="0 0 10.414 18.828">
+                    <path id="chevron-left" d="M17,22,9,14l8-8" transform="translate(-8 -4.586)" fill="none"
+                        stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                </svg>
+            </div>
+            <div class="flex pl-6 w-1/3 header-w">
+                <h2 class="text-white text-2xl">Chatrooms</h2>
+                <h3 class="p-2">
+                    <%= locals.username %>
+                </h3>
+            </div>
+            <div id="d-hidden" class="w-1/3"></div>
+
+
+            <div class="absolute right-24 space-x-4 flex d-hidden">
+                <button class="bg-neutral-300  px-4 py-2 rounded-full text-black flex items-center">
+                    <span class="mr-6">ROOMS</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18.304" height="18.304" viewBox="0 0 18.304 18.304"
+                        class="text-white">
+                        <path id="message-square"
+                            d="M19.3,13.87a1.812,1.812,0,0,1-1.812,1.812H6.623L3,19.3V4.812A1.812,1.812,0,0,1,4.812,3H17.493A1.812,1.812,0,0,1,19.3,4.812Z"
+                            transform="translate(-2 -2)" fill="none" stroke="#1f1f1f" stroke-linecap="round"
+                            stroke-linejoin="round" stroke-width="2" />
+                    </svg>
+                </button>
+                <button id="userstab" class="bg-blue-500 px-4 py-2 rounded-full text-white flex items-center">
+                    <span class="mr-6">USERS</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="21.928" height="18.403" viewBox="0 0 21.928 18.403"
+                        class="text-white">
+                        <g id="users" transform="translate(1 1.217)">
+                            <path id="Path_7" data-name="Path 7"
+                                d="M15.493,20.435V18.623A3.623,3.623,0,0,0,11.87,15H4.623A3.623,3.623,0,0,0,1,18.623v1.812"
+                                transform="translate(-1 -4.248)" fill="none" stroke="#fff" stroke-linecap="round"
+                                stroke-linejoin="round" stroke-width="2" />
+                            <ellipse id="Ellipse_5" data-name="Ellipse 5" cx="4" cy="3.5" rx="4" ry="3.5"
+                                transform="translate(2.82 0.125)" fill="none" stroke="#fff" stroke-linecap="round"
+                                stroke-linejoin="round" stroke-width="2" />
+                            <path id="Path_8" data-name="Path 8" d="M22.717,20.447V18.635A3.623,3.623,0,0,0,20,15.13"
+                                transform="translate(-2.79 -4.26)" fill="none" stroke="#fff" stroke-linecap="round"
+                                stroke-linejoin="round" stroke-width="2" />
+                            <path id="Path_9" data-name="Path 9" d="M16,3.13a3.623,3.623,0,0,1,0,7.02"
+                                transform="translate(-2.413 -3.13)" fill="none" stroke="#fff" stroke-linecap="round"
+                                stroke-linejoin="round" stroke-width="2" />
+                        </g>
+                    </svg>
+                </button>
+                <button id="quitButton" class="bg-blue-500 px-4 py-2 rounded-full text-white flex items-center ">
+                    <span class="mr-6">QUIT</span> <!-- Added mr-2 for space between text and SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="23.154" height="17.645" viewBox="0 0 23.154 17.645"
+                        class="text-white">
+                        <path id="sign-out-alt-solid"
+                            d="M22.833,27.761l-7.718,7.718a1.1,1.1,0,0,1-1.884-.781v-4.41H6.983a1.1,1.1,0,0,1-1.1-1.1v-4.41a1.1,1.1,0,0,1,1.1-1.1h6.248v-4.41a1.105,1.105,0,0,1,1.884-.781L22.833,26.2A1.112,1.112,0,0,1,22.833,27.761ZM8.821,35.249V33.411a.553.553,0,0,0-.551-.551H4.41a1.469,1.469,0,0,1-1.47-1.47V22.569A1.469,1.469,0,0,1,4.41,21.1H8.27a.553.553,0,0,0,.551-.551V18.71a.553.553,0,0,0-.551-.551H4.41A4.412,4.412,0,0,0,0,22.569V31.39A4.412,4.412,0,0,0,4.41,35.8H8.27A.553.553,0,0,0,8.821,35.249Z"
+                            transform="translate(0 -18.158)" fill="#fff" />
+                    </svg>
+                </button>
+            </div>
+
+
+        </div>
+        <main class="flex-col flex-1 flex items-stretch md:flex-row md:justify-around rounded-tl-3xl">
+            <div
+                class="min-h-full w-1/4 bg-zinc-800 overflow-hidden md:flex flex-col items-center z-10 margintop-neg marginbottom-neg sidebar d-hidden ">
+                <div class="min-h-full w-full bg-zinc-800 overflow-hidden flex flex-col items-center mt-12 ">
+                    <div class="w-9/12 bg-zinc-800 rounded-tl-2xl rounded-tr-2xl rounded-bl-lg p-4 text-white">
+                        <div class="flex">
+                            <h2>Chillout place</h2>
+                            <p class="flex ml-auto">14 <svg xmlns="http://www.w3.org/2000/svg" width="21.928"
+                                    height="18.403" viewBox="0 0 21.928 18.403">
+                                    <g id="users" transform="translate(1 1.217)">
+                                        <path id="Path_7" data-name="Path 7"
+                                            d="M15.493,20.435V18.623A3.623,3.623,0,0,0,11.87,15H4.623A3.623,3.623,0,0,0,1,18.623v1.812"
+                                            transform="translate(-1 -4.248)" fill="none" stroke="#696969"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                        <ellipse id="Ellipse_5" data-name="Ellipse 5" cx="4" cy="3.5" rx="4" ry="3.5"
+                                            transform="translate(2.82 0.125)" fill="none" stroke="#696969"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                        <path id="Path_8" data-name="Path 8"
+                                            d="M22.717,20.447V18.635A3.623,3.623,0,0,0,20,15.13"
+                                            transform="translate(-2.79 -4.26)" fill="none" stroke="#696969"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                        <path id="Path_9" data-name="Path 9" d="M16,3.13a3.623,3.623,0,0,1,0,7.02"
+                                            transform="translate(-2.413 -3.13)" fill="none" stroke="#696969"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                    </g>
+                                </svg>
+                            </p>
+
+                        </div>
+                        <p class="text-xs text-zinc-600">Where you at tonight?</p>
+                    </div>
+                    <div
+                        class="w-9/12 bg-neutral-300 bg-opacity-10 rounded-tl-2xl rounded-tr-2xl rounded-bl-lg text-white p-4">
+                        <div class="flex">
+                            <h2>Chillout place</h2>
+                            <p class="flex ml-auto">14 <svg xmlns="http://www.w3.org/2000/svg" width="21.928"
+                                    height="18.403" viewBox="0 0 21.928 18.403">
+                                    <g id="users" transform="translate(1 1.217)">
+                                        <path id="Path_7" data-name="Path 7"
+                                            d="M15.493,20.435V18.623A3.623,3.623,0,0,0,11.87,15H4.623A3.623,3.623,0,0,0,1,18.623v1.812"
+                                            transform="translate(-1 -4.248)" fill="none" stroke="#696969"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                        <ellipse id="Ellipse_5" data-name="Ellipse 5" cx="4" cy="3.5" rx="4" ry="3.5"
+                                            transform="translate(2.82 0.125)" fill="none" stroke="#696969"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                        <path id="Path_8" data-name="Path 8"
+                                            d="M22.717,20.447V18.635A3.623,3.623,0,0,0,20,15.13"
+                                            transform="translate(-2.79 -4.26)" fill="none" stroke="#696969"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                        <path id="Path_9" data-name="Path 9" d="M16,3.13a3.623,3.623,0,0,1,0,7.02"
+                                            transform="translate(-2.413 -3.13)" fill="none" stroke="#696969"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                    </g>
+                                </svg>
+                            </p>
+
+                        </div>
+                        <p class="text-xs text-zinc-600">Where you at tonight?</p>
+                    </div>
+                    <div class="w-9/12 bg-zinc-800 rounded-tl-2xl rounded-tr-2xl rounded-bl-lg text-white p-4">
+                        <div class="flex">
+                            <h2>Chillout place</h2>
+                            <p class="flex ml-auto">14 <svg xmlns="http://www.w3.org/2000/svg" width="21.928"
+                                    height="18.403" viewBox="0 0 21.928 18.403">
+                                    <g id="users" transform="translate(1 1.217)">
+                                        <path id="Path_7" data-name="Path 7"
+                                            d="M15.493,20.435V18.623A3.623,3.623,0,0,0,11.87,15H4.623A3.623,3.623,0,0,0,1,18.623v1.812"
+                                            transform="translate(-1 -4.248)" fill="none" stroke="#696969"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                        <ellipse id="Ellipse_5" data-name="Ellipse 5" cx="4" cy="3.5" rx="4" ry="3.5"
+                                            transform="translate(2.82 0.125)" fill="none" stroke="#696969"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                        <path id="Path_8" data-name="Path 8"
+                                            d="M22.717,20.447V18.635A3.623,3.623,0,0,0,20,15.13"
+                                            transform="translate(-2.79 -4.26)" fill="none" stroke="#696969"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                        <path id="Path_9" data-name="Path 9" d="M16,3.13a3.623,3.623,0,0,1,0,7.02"
+                                            transform="translate(-2.413 -3.13)" fill="none" stroke="#696969"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                    </g>
+                                </svg>
+                            </p>
+
+                        </div>
+                        <p class="text-xs text-zinc-600">Where you at tonight?</p>
+                    </div>
+                    <div onclick="showMainContent()"
+                        class="w-9/12 bg-blue-500 rounded-tl-2xl rounded-tr-2xl rounded-bl-lg text-white p-4 ">
+                        <div class="flex">
+                            <h2>Chillout place</h2>
+                            <p class="flex ml-auto">14 <svg class="fill-white" xmlns="http://www.w3.org/2000/svg"
+                                    width="21.928" height="18.403" viewBox="0 0 21.928 18.403">
+                                    <g id="users" transform="translate(1 1.217)">
+                                        <path id="Path_7" data-name="Path 7"
+                                            d="M15.493,20.435V18.623A3.623,3.623,0,0,0,11.87,15H4.623A3.623,3.623,0,0,0,1,18.623v1.812"
+                                            transform="translate(-1 -4.248)" fill="none" stroke="#fff"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                        <ellipse id="Ellipse_5" data-name="Ellipse 5" cx="4" cy="3.5" rx="4" ry="3.5"
+                                            transform="translate(2.82 0.125)" fill="none" stroke="#fff"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                        <path id="Path_8" data-name="Path 8"
+                                            d="M22.717,20.447V18.635A3.623,3.623,0,0,0,20,15.13"
+                                            transform="translate(-2.79 -4.26)" fill="none" stroke="#fff"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                        <path id="Path_9" data-name="Path 9" d="M16,3.13a3.623,3.623,0,0,1,0,7.02"
+                                            transform="translate(-2.413 -3.13)" fill="none" stroke="#fff"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+                                    </g>
+                                </svg>
+                            </p>
+
+                        </div>
+                        <p class="text-xs text-zinc-300">Where you at tonight?</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="min-h-full h-full w-full md:w-3/4 flex justify-center main-content chat-mobile">
+                <div class="w-11/12 min-h-full">
+                    <form id="chat" class="min-h-full w-full h-full">
+                        <ul class="w-full min-h-full" id="messages"></ul>
+                        <ul id="system-messages" style="color: red;"></ul>
+
+                </div>
+            </div>
+        </main>
+
+
+
+        <div class="w-screen bg-black h-20 rounded-t-xl flex z-20">
+            <div class="w-full flex footer-menu m-auto d-hidden">
+                <div class="">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18.304" height="18.304" viewBox="0 0 18.304 18.304">
+                        <path id="message-square"
+                            d="M19.3,13.87a1.812,1.812,0,0,1-1.812,1.812H6.623L3,19.3V4.812A1.812,1.812,0,0,1,4.812,3H17.493A1.812,1.812,0,0,1,19.3,4.812Z"
+                            transform="translate(-2 -2)" fill="none" stroke="#a6a6a6" stroke-linecap="round"
+                            stroke-linejoin="round" stroke-width="2" opacity="0.599" />
+                    </svg>
+                </div>
+                <div class="">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="21.928" height="18.403" viewBox="0 0 21.928 18.403">
+                        <g id="users" transform="translate(1 1.217)" opacity="0.596">
+                            <path id="Path_7" data-name="Path 7"
+                                d="M15.493,20.435V18.623A3.623,3.623,0,0,0,11.87,15H4.623A3.623,3.623,0,0,0,1,18.623v1.812"
+                                transform="translate(-1 -4.248)" fill="none" stroke="#a6a6a6" stroke-linecap="round"
+                                stroke-linejoin="round" stroke-width="2" />
+                            <ellipse id="Ellipse_5" data-name="Ellipse 5" cx="4" cy="3.5" rx="4" ry="3.5"
+                                transform="translate(2.82 0.125)" fill="none" stroke="#a6a6a6" stroke-linecap="round"
+                                stroke-linejoin="round" stroke-width="2" />
+                            <path id="Path_8" data-name="Path 8" d="M22.717,20.447V18.635A3.623,3.623,0,0,0,20,15.13"
+                                transform="translate(-2.79 -4.26)" fill="none" stroke="#a6a6a6" stroke-linecap="round"
+                                stroke-linejoin="round" stroke-width="2" />
+                            <path id="Path_9" data-name="Path 9" d="M16,3.13a3.623,3.623,0,0,1,0,7.02"
+                                transform="translate(-2.413 -3.13)" fill="none" stroke="#a6a6a6" stroke-linecap="round"
+                                stroke-linejoin="round" stroke-width="2" />
+                        </g>
+                    </svg>
+
+                </div>
+                <button id="quitButton">
+                    <div class="" id="quitButton2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="23.154" height="17.645"
+                            viewBox="0 0 23.154 17.645">
+                            <path id="sign-out-alt-solid"
+                                d="M22.833,27.761l-7.718,7.718a1.1,1.1,0,0,1-1.884-.781v-4.41H6.983a1.1,1.1,0,0,1-1.1-1.1v-4.41a1.1,1.1,0,0,1,1.1-1.1h6.248v-4.41a1.105,1.105,0,0,1,1.884-.781L22.833,26.2A1.112,1.112,0,0,1,22.833,27.761ZM8.821,35.249V33.411a.553.553,0,0,0-.551-.551H4.41a1.469,1.469,0,0,1-1.47-1.47V22.569A1.469,1.469,0,0,1,4.41,21.1H8.27a.553.553,0,0,0,.551-.551V18.71a.553.553,0,0,0-.551-.551H4.41A4.412,4.412,0,0,0,0,22.569V31.39A4.412,4.412,0,0,0,4.41,35.8H8.27A.553.553,0,0,0,8.821,35.249Z"
+                                transform="translate(0 -18.158)" fill="#a6a6a6" opacity="0.604" />
+                        </svg>
+
+                    </div>
+                </button>
+            </div>
+            <div class="w-1/4 min-h-14 d-hidden"></div>
+            <div class="md:w-3/4 min-h-14 flex justify-center w-full s-footer">
+                <div class="relative mt-4">
+                    <input placeholder="Type your text" type="text" id="message" autocomplete="off"
+                        class="w-96 h-10 rounded-full bg-zinc-800 p-4 text-white">
+                    <button type="submit" id="sendMessage"
+                        class="absolute right-2 bottom-3 transform -translate-y-1/2 bg-blue-500  rounded-full text-white w-8 h-8 flex justify-center items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20.023" height="20.03"
+                            viewBox="0 0 20.023 20.03">
+                            <path id="paper-plane-solid"
+                                d="M18.627,.1.5,10.554a.939.939,0,0,0,.086,1.69l4.158,1.744,11.237-9.9a.234.234,0,0,1,.336.325L6.893,15.889v3.149a.938.938,0,0,0,1.662.618l2.484-3.023,4.873,2.042a.941.941,0,0,0,1.291-.712l2.816-16.9A.939.939,0,0,0,18.627,.1Z"
+                                transform="translate(-0.01 0.031)" fill="#fff" />
+                        </svg>
+                    </button>
+
+                </div>
+            </div>
+            </form>
+
+        </div>
+
+    </div>
+    <script>
+        function showSidebar() {
+            document.querySelector('.sidebar').classList.remove('d-hidden');
+            document.querySelector('.main-content').classList.add('d-hidden');
+            document.querySelector('.sidebarshow').classList.add('d-hidden');
+            document.querySelector('.s-footer').classList.add('d-hidden');
+            document.querySelector('.footer-menu').classList.remove('d-hidden');
+        }
+        function showMainContent() {
+            document.querySelector('.main-content').classList.remove('d-hidden');
+            document.querySelector('.sidebarshow').classList.remove('d-hidden');
+            document.querySelector('.sidebar').classList.add('d-hidden');
+            document.querySelector('.s-footer').classList.remove('d-hidden');
+            document.querySelector('.footer-menu').classList.add('d-hidden');
+        }
+
+        const messagesData = [];
+        const messagesUl = document.getElementById("messages");
+        const messageInput = document.getElementById("message");
+        const sendMessageButton = document.getElementById("sendMessage");
+
+
+        sendMessageButton.addEventListener("click", () => {
+            const messageText = messageInput.value.trim();
+
+            if (messageText !== "") {
+                const liElement = document.createElement("li");
+                liElement.className = "w-8/12 bg-blue-500 mt-10 p-4 text-white rounded-tl-lg rounded-tr-lg rounded-bl-lg ml-auto";
+                liElement.textContent = `${username}: ${messageText}`;
+
+                messagesUl.appendChild(liElement);
+                messageInput.value = "";
+
+                messagesUl.scrollTop = messagesUl.scrollHeight;
+            }
+        });
+
+
+    </script>
+</body>
+
+</html>
